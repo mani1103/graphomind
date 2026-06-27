@@ -208,7 +208,7 @@
 <body>
 
 <!-- ══ WELCOME ══ -->
-<div class="page active" id="page-welcome">
+<div class="page" id="page-welcome">
   <div class="container">
     <div class="welcome-hero">
       <span class="hero-emoji">✍️</span>
@@ -231,29 +231,32 @@
 </div>
 
 <!-- ══ HOME ══ -->
-<div class="page" id="page-home">
+<div class="page active" id="page-home">
   <nav class="nav">
     <div class="nav-logo"><span>Grapho</span>Mind</div>
     <button class="nav-btn" onclick="showPage('page-settings')" title="Settings">⚙️</button>
   </nav>
   <div class="container">
-    <div class="home-header">
-      <div>
-        <div class="home-logo"><span>Grapho</span>Mind</div>
-        <div class="home-tagline">Photograph any handwriting to begin</div>
-      </div>
+
+    <div style="text-align:center;padding:24px 0 20px">
+      <h2 style="font-size:22px;font-weight:700;letter-spacing:-0.5px;margin-bottom:4px"><span style="color:#534AB7">Grapho</span>Mind</h2>
+      <p style="font-size:14px;color:#666">Photograph any handwriting to reveal a personality report</p>
     </div>
 
+    <!-- Step 1: Name -->
     <div class="card">
-      <label class="name-label">👤 Whose handwriting is this? (optional)</label>
+      <label class="name-label">👤 Step 1 — Whose handwriting is this? <span style="color:#9E9E9E;font-weight:400">(optional)</span></label>
       <input type="text" id="person-name" placeholder="Enter a name to personalise the report…" autocomplete="off">
     </div>
 
-    <div class="upload-zone" id="upload-zone">
-      <input type="file" id="file-input" accept="image/*" onchange="handleFile(this)">
-      <div class="upload-icon">📷</div>
-      <div class="upload-title">Click or drag a photo here</div>
-      <div class="upload-sub">JPG, PNG — any photo of handwritten text</div>
+    <!-- Step 2: Photo -->
+    <div style="font-size:13px;font-weight:600;color:#534AB7;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px">📸 Step 2 — Upload or take a photo</div>
+
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+      <input type="file" id="file-input" accept="image/*" onchange="handleFile(this)" style="display:none">
+      <div class="upload-icon">🖼️</div>
+      <div class="upload-title">Click here to upload a photo</div>
+      <div class="upload-sub">JPG, PNG — any photo of handwritten text · drag & drop also works</div>
     </div>
 
     <div class="preview-wrap" id="preview-wrap" style="display:none">
@@ -262,23 +265,24 @@
       <div class="name-badge" id="name-badge" style="display:none"></div>
     </div>
 
-    <div class="btn-row">
+    <div class="btn-row" style="margin-top:10px">
       <button class="icon-btn" onclick="document.getElementById('file-input').click()">
         <span class="icon-btn-emoji">🖼️</span>
-        <span class="icon-btn-label">Upload photo</span>
+        <span class="icon-btn-label">Upload from device</span>
       </button>
       <button class="icon-btn" onclick="openCamera()">
         <span class="icon-btn-emoji">📷</span>
-        <span class="icon-btn-label">Take photo</span>
+        <span class="icon-btn-label">Take photo now</span>
       </button>
     </div>
     <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="handleFile(this)" style="display:none">
 
+    <!-- Step 3: Analyse -->
     <button class="analyse-btn" id="analyse-btn" onclick="runAnalysis()" style="display:none">
       ✦  Analyse handwriting
     </button>
 
-    <div class="tips-card">
+    <div class="tips-card" style="margin-top:10px">
       <div class="tips-title">💡 Tips for best results</div>
       <div class="tip-item">• Use natural light, avoid shadows</div>
       <div class="tip-item">• Include at least 3–4 lines of writing</div>
