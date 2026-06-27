@@ -186,6 +186,34 @@
   .danger-btn { width: 100%; padding: 13px; background: #FFF0F0; color: #CC0000; border: 0.5px solid #FFD0D0; border-radius: var(--radius); font-size: 14px; cursor: pointer; margin-top: 8px; transition: background 0.2s; }
   .danger-btn:hover { background: #FFE0E0; }
 
+  /* ── Mobile/Desktop visibility ── */
+  .mobile-only { display: none; }
+  .desktop-only { display: block; }
+  @media (max-width: 768px) {
+    .mobile-only { display: block; }
+    .desktop-only { display: none !important; }
+  }
+
+  /* ── Mobile upload buttons ── */
+  .mobile-camera-btn {
+    width: 100%; padding: 24px 20px; margin-bottom: 12px;
+    background: linear-gradient(135deg, #534AB7, #3C3489);
+    color: white; border: none; border-radius: 20px;
+    text-align: center; cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+    box-shadow: 0 4px 16px rgba(83,74,183,0.35);
+  }
+  .mobile-camera-btn:active { transform: scale(0.97); opacity: 0.9; }
+  .mobile-gallery-btn {
+    width: 100%; padding: 20px;
+    background: white; color: #333;
+    border: 1.5px solid rgba(83,74,183,0.2);
+    border-radius: 20px; text-align: center; cursor: pointer;
+    transition: transform 0.1s, background 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .mobile-gallery-btn:active { transform: scale(0.97); background: #F8F7FF; }
+
   /* ── Responsive ── */
   @media (max-width: 480px) {
     .hero-title { font-size: 30px; }
@@ -264,13 +292,29 @@
     </div>
 
     <!-- Step 2: Photo -->
-    <div style="font-size:13px;font-weight:600;color:#534AB7;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px">📸 Step 2 — Upload or take a photo</div>
+    <div style="font-size:13px;font-weight:600;color:#534AB7;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px">📸 Step 2 — Add handwriting photo</div>
 
-    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+    <!-- Desktop: drag & drop zone -->
+    <div class="upload-zone desktop-only" id="upload-zone" onclick="document.getElementById('file-input').click()">
       <input type="file" id="file-input" accept="image/*" onchange="handleFile(this)" style="display:none">
       <div class="upload-icon">🖼️</div>
-      <div class="upload-title">Click here to upload a photo</div>
-      <div class="upload-sub">JPG, PNG — any photo of handwritten text · drag & drop also works</div>
+      <div class="upload-title">Click or drag a photo here</div>
+      <div class="upload-sub">JPG, PNG — any photo of handwritten text</div>
+    </div>
+
+    <!-- Mobile: big tap buttons -->
+    <div class="mobile-only" id="mobile-upload-btns">
+      <input type="file" id="file-input-mobile" accept="image/*" onchange="handleFile(this)" style="display:none">
+      <button class="mobile-camera-btn" onclick="openCamera()">
+        <span style="font-size:36px;display:block;margin-bottom:10px">📷</span>
+        <span style="font-size:17px;font-weight:700;display:block;margin-bottom:4px">Take a photo</span>
+        <span style="font-size:13px;opacity:0.85;display:block">Use your camera to photograph handwriting</span>
+      </button>
+      <button class="mobile-gallery-btn" onclick="document.getElementById('file-input-mobile').click()">
+        <span style="font-size:30px;display:block;margin-bottom:8px">🖼️</span>
+        <span style="font-size:15px;font-weight:600;display:block;margin-bottom:3px">Choose from gallery</span>
+        <span style="font-size:13px;opacity:0.75;display:block">Pick an existing photo</span>
+      </button>
     </div>
 
     <div class="preview-wrap" id="preview-wrap" style="display:none">
@@ -279,14 +323,15 @@
       <div class="name-badge" id="name-badge" style="display:none"></div>
     </div>
 
-    <div class="btn-row" style="margin-top:10px">
+    <!-- Desktop extra buttons -->
+    <div class="btn-row desktop-only" style="margin-top:10px">
       <button class="icon-btn" onclick="document.getElementById('file-input').click()">
         <span class="icon-btn-emoji">🖼️</span>
         <span class="icon-btn-label">Upload from device</span>
       </button>
       <button class="icon-btn" onclick="openCamera()">
         <span class="icon-btn-emoji">📷</span>
-        <span class="icon-btn-label">Take photo now</span>
+        <span class="icon-btn-label">Take photo</span>
       </button>
     </div>
     <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="handleFile(this)" style="display:none">
@@ -402,6 +447,9 @@ function signOut() {
 
 // ── Home ────────────────────────────────────────────────────
 function handleFile(input) {
+  // sync both file inputs so remove works correctly
+  const otherInput = input.id === 'file-input' ? document.getElementById('file-input-mobile') : document.getElementById('file-input');
+  if (otherInput) otherInput.value = '';
   const file = input.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
@@ -412,6 +460,7 @@ function handleFile(input) {
     document.getElementById('preview-img').src = dataUrl;
     document.getElementById('preview-wrap').style.display = 'block';
     document.getElementById('upload-zone').style.display = 'none';
+    document.getElementById('mobile-upload-btns').style.display = 'none';
     updateNameBadge();
     document.getElementById('analyse-btn').style.display = 'block';
     document.getElementById('analyse-btn').textContent = '✦  Analyse ' + (document.getElementById('person-name').value.trim() ? document.getElementById('person-name').value.trim() + "'s" : 'this') + ' handwriting';
@@ -427,9 +476,15 @@ function openCamera() {
 function removeImage() {
   currentImageB64 = ''; currentImageUri = '';
   document.getElementById('preview-wrap').style.display = 'none';
-  document.getElementById('upload-zone').style.display = 'block';
+  // show correct upload UI based on screen size
+  if (window.innerWidth <= 768) {
+    document.getElementById('mobile-upload-btns').style.display = 'block';
+  } else {
+    document.getElementById('upload-zone').style.display = 'block';
+  }
   document.getElementById('analyse-btn').style.display = 'none';
   document.getElementById('file-input').value = '';
+  document.getElementById('file-input-mobile').value = '';
   document.getElementById('camera-input').value = '';
 }
 
