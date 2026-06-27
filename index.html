@@ -446,6 +446,26 @@ function signOut() {
 }
 
 // ── Home ────────────────────────────────────────────────────
+
+// Resize image to max 1600px and compress before sending to API
+function resizeImage(dataUrl, maxSize, quality, callback) {
+  const img = new window.Image();
+  img.onload = function() {
+    let w = img.width, h = img.height;
+    // Scale down if either dimension exceeds maxSize
+    if (w > maxSize || h > maxSize) {
+      if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+      else { w = Math.round(w * maxSize / h); h = maxSize; }
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    callback(canvas.toDataURL('image/jpeg', quality));
+  };
+  img.src = dataUrl;
+}
+
 function handleFile(input) {
   // sync both file inputs so remove works correctly
   const otherInput = input.id === 'file-input' ? document.getElementById('file-input-mobile') : document.getElementById('file-input');
@@ -453,17 +473,20 @@ function handleFile(input) {
   const file = input.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    const dataUrl = e.target.result;
-    currentImageB64 = dataUrl.split(',')[1];
-    currentImageMime = file.type || 'image/jpeg';
-    currentImageUri = dataUrl;
-    document.getElementById('preview-img').src = dataUrl;
-    document.getElementById('preview-wrap').style.display = 'block';
-    document.getElementById('upload-zone').style.display = 'none';
-    document.getElementById('mobile-upload-btns').style.display = 'none';
-    updateNameBadge();
-    document.getElementById('analyse-btn').style.display = 'block';
-    document.getElementById('analyse-btn').textContent = '✦  Analyse ' + (document.getElementById('person-name').value.trim() ? document.getElementById('person-name').value.trim() + "'s" : 'this') + ' handwriting';
+    const rawDataUrl = e.target.result;
+    // Resize to max 1600px and compress to jpeg 0.85 quality
+    resizeImage(rawDataUrl, 1600, 0.85, function(dataUrl) {
+      currentImageB64 = dataUrl.split(',')[1];
+      currentImageMime = 'image/jpeg';
+      currentImageUri = dataUrl;
+      document.getElementById('preview-img').src = dataUrl;
+      document.getElementById('preview-wrap').style.display = 'block';
+      document.getElementById('upload-zone').style.display = 'none';
+      document.getElementById('mobile-upload-btns').style.display = 'none';
+      updateNameBadge();
+      document.getElementById('analyse-btn').style.display = 'block';
+      document.getElementById('analyse-btn').textContent = '✦  Analyse ' + (document.getElementById('person-name').value.trim() ? document.getElementById('person-name').value.trim() + "'s" : 'this') + ' handwriting';
+    });
   };
   reader.readAsDataURL(file);
 }
