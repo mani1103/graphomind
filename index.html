@@ -2,6 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-FYNF118GZ0"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-FYNF118GZ0');
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GraphoMind — Handwriting Personality Analysis</title>
 <style>
@@ -571,6 +579,13 @@ async function runAnalysis() {
     if (!res.ok) throw new Error(data?.error || `Error ${res.status}`);
     const report = data.report;
     currentReport = report;
+    // Track analysis event in Google Analytics
+    if (typeof gtag !== 'undefined') {
+      gtag('event', 'handwriting_analysed', {
+        'event_category': 'analysis',
+        'event_label': name ? 'named' : 'anonymous',
+      });
+    }
     renderReport(report, name);
   } catch(e) {
     clearInterval(t);
