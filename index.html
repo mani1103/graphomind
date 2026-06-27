@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GraphoMind — Handwriting Personality Analysis</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --p50:#EEEDFE; --p100:#CECBF6; --p200:#AFA9EC; --p600:#534AB7; --p800:#3C3489; --p900:#26215C;
+    --t50:#E1F5EE; --t400:#1D9E75; --t600:#0F6E56; --t800:#085041;
+    --c50:#FAECE7; --c600:#993C1D;
+    --a50:#FAEEDA; --a600:#854F0B;
+    --g100:#F1EFE8; --g200:#E5E5E5; --g400:#9E9E9E; --g600:#666; --g800:#333; --g900:#111;
+    --bg:#F8F7FF; --white:#fff;
+    --radius:16px; --shadow:0 1px 4px rgba(0,0,0,0.08);
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--g900); min-height: 100vh; }
+
+  /* ── Layout ── */
+  .page { display: none; min-height: 100vh; }
+  .page.active { display: flex; flex-direction: column; }
+  .container { max-width: 560px; margin: 0 auto; padding: 0 20px 60px; width: 100%; }
+
+  /* ── Navbar ── */
+  .nav { background: var(--white); border-bottom: 0.5px solid rgba(0,0,0,0.08); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .nav-logo span { color: var(--p600); }
+  .nav-btn { background: none; border: none; cursor: pointer; font-size: 20px; padding: 4px; }
+
+  /* ── Cards ── */
+  .card { background: var(--white); border-radius: var(--radius); padding: 20px; border: 0.5px solid rgba(0,0,0,0.08); margin-bottom: 14px; box-shadow: var(--shadow); }
+
+  /* ── Buttons ── */
+  .btn-primary { width: 100%; padding: 15px; background: var(--p600); color: #fff; border: none; border-radius: 14px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.1s; margin-top: 14px; }
+  .btn-primary:hover { background: var(--p800); }
+  .btn-primary:active { transform: scale(0.99); }
+  .btn-primary:disabled { background: var(--g200); color: var(--g400); cursor: not-allowed; }
+  .btn-secondary { width: 100%; padding: 13px; background: transparent; color: var(--g800); border: 1px solid var(--p200); border-radius: 14px; font-size: 14px; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
+  .btn-secondary:hover { background: var(--p50); }
+
+  /* ── Form inputs ── */
+  input[type=text], input[type=password] { width: 100%; background: var(--g100); border: 0.5px solid rgba(0,0,0,0.1); border-radius: 10px; padding: 12px; font-size: 14px; color: var(--g900); font-family: inherit; outline: none; }
+  input[type=text]:focus, input[type=password]:focus { border-color: var(--p600); }
+  .input-row { display: flex; gap: 8px; align-items: center; }
+  .input-row input { flex: 1; }
+  .show-btn { background: var(--g100); border: 0.5px solid rgba(0,0,0,0.1); border-radius: 10px; padding: 12px 14px; font-size: 13px; cursor: pointer; color: var(--g800); white-space: nowrap; }
+
+  /* ── Welcome page ── */
+  .welcome-hero { text-align: center; padding: 48px 0 32px; }
+  .hero-emoji { font-size: 60px; display: block; margin-bottom: 16px; }
+  .hero-title { font-size: 36px; font-weight: 700; letter-spacing: -1px; margin-bottom: 8px; }
+  .hero-title span { color: var(--p600); }
+  .hero-sub { font-size: 15px; color: var(--g600); }
+  .feature-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 32px; }
+  .feature-pill { background: var(--p50); border-radius: 999px; padding: 6px 14px; font-size: 12px; color: var(--p800); font-weight: 500; display: flex; align-items: center; gap: 5px; }
+  .card-title { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+  .card-body { font-size: 13px; color: var(--g600); line-height: 1.6; margin-bottom: 16px; }
+  .err-text { font-size: 13px; color: var(--c600); margin-top: 8px; }
+  .link-btn { text-align: center; margin-top: 16px; }
+  .link-btn a { font-size: 13px; color: var(--p600); text-decoration: none; }
+  .foot-note { font-size: 11px; color: var(--g400); text-align: center; margin-top: 20px; line-height: 1.6; }
+
+  /* ── Home page ── */
+  .home-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 24px 0 20px; }
+  .home-logo { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .home-logo span { color: var(--p600); }
+  .home-tagline { font-size: 13px; color: var(--g600); margin-top: 2px; }
+  .name-label { font-size: 13px; font-weight: 500; color: var(--g800); margin-bottom: 8px; display: block; }
+  .upload-zone { border: 2px dashed var(--p200); border-radius: var(--radius); padding: 32px 20px; text-align: center; background: var(--p50); cursor: pointer; transition: border-color 0.2s, background 0.2s; margin-bottom: 14px; position: relative; }
+  .upload-zone:hover, .upload-zone.drag-over { border-color: var(--p600); background: #E8E6FE; }
+  .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 40px; margin-bottom: 12px; }
+  .upload-title { font-size: 16px; font-weight: 600; color: var(--g900); margin-bottom: 6px; }
+  .upload-sub { font-size: 13px; color: var(--g600); }
+  .preview-wrap { position: relative; margin-bottom: 14px; border-radius: var(--radius); overflow: hidden; }
+  .preview-wrap img { width: 100%; max-height: 280px; object-fit: cover; display: block; border-radius: var(--radius); }
+  .remove-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.55); color: #fff; border: none; border-radius: 999px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+  .name-badge { position: absolute; bottom: 10px; left: 10px; background: rgba(83,74,183,0.88); color: #fff; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 500; }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .icon-btn { background: var(--white); border: 0.5px solid rgba(0,0,0,0.08); border-radius: var(--radius); padding: 18px; text-align: center; cursor: pointer; transition: background 0.2s, transform 0.1s; }
+  .icon-btn:hover { background: var(--g100); }
+  .icon-btn:active { transform: scale(0.97); }
+  .icon-btn-emoji { font-size: 28px; display: block; margin-bottom: 6px; }
+  .icon-btn-label { font-size: 13px; font-weight: 500; color: var(--g800); }
+  .analyse-btn { width: 100%; padding: 16px; background: var(--p600); color: #fff; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 700; cursor: pointer; margin-bottom: 20px; transition: background 0.2s, transform 0.1s; letter-spacing: 0.2px; }
+  .analyse-btn:hover { background: var(--p800); }
+  .analyse-btn:active { transform: scale(0.99); }
+  .tips-card { background: var(--p50); border-radius: var(--radius); padding: 16px; border: 0.5px solid var(--p100); }
+  .tips-title { font-size: 13px; font-weight: 600; color: var(--p800); margin-bottom: 8px; }
+  .tip-item { font-size: 13px; color: var(--p900); line-height: 22px; }
+
+  /* ── Loading ── */
+  .load-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
+  .load-logo { font-size: 28px; font-weight: 700; margin-bottom: 32px; letter-spacing: -0.5px; }
+  .load-logo span { color: var(--p600); }
+  .load-card { background: var(--white); border-radius: 24px; padding: 40px; text-align: center; max-width: 400px; width: 100%; border: 0.5px solid rgba(0,0,0,0.08); box-shadow: var(--shadow); }
+  .load-emoji { font-size: 44px; margin-bottom: 24px; display: block; }
+  .dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--p600); animation: bop 1.2s ease-in-out infinite; }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bop { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+  .load-msg { font-size: 14px; color: var(--g800); margin-bottom: 6px; }
+  .load-sub { font-size: 12px; color: var(--g400); }
+
+  /* ── Report Hero ── */
+  .report-hero { height: 280px; position: relative; display: flex; align-items: flex-end; }
+  .report-hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .report-hero-overlay { position: absolute; inset: 0; background: rgba(38,33,92,0.84); }
+  .report-back-btn { position: absolute; top: 20px; left: 20px; z-index: 2; background: rgba(255,255,255,0.2); color: #fff; border: none; border-radius: 999px; padding: 7px 16px; font-size: 14px; font-weight: 500; cursor: pointer; backdrop-filter: blur(4px); }
+  .report-hero-content { position: relative; z-index: 1; padding: 24px; width: 100%; }
+  .report-hero-name { font-size: 12px; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 6px; }
+  .report-hero-archetype { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 10px; line-height: 1.2; }
+  .archetype-badge { display: inline-block; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); border-radius: 999px; padding: 5px 14px; font-size: 12px; backdrop-filter: blur(4px); }
+
+  /* ── Report Body ── */
+  .report-body { padding: 20px; max-width: 560px; margin: 0 auto; width: 100%; }
+  .summary-card { background: var(--p50); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; border: 0.5px solid var(--p100); }
+  .summary-text { font-size: 14px; color: var(--p900); line-height: 1.7; }
+
+  /* ── Score Meters ── */
+  .meters-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+  .meter-card { background: var(--white); border-radius: 14px; padding: 12px; text-align: center; border: 0.5px solid rgba(0,0,0,0.08); box-shadow: var(--shadow); }
+  .meter-top { display: flex; align-items: baseline; justify-content: center; gap: 4px; margin-bottom: 8px; }
+  .meter-emoji { font-size: 16px; }
+  .meter-val { font-size: 26px; font-weight: 700; }
+  .meter-bar-bg { height: 5px; background: var(--g200); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+  .meter-bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+  .meter-label { font-size: 10px; font-weight: 600; color: var(--g600); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ── Section Cards ── */
+  .section-card { background: var(--white); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; border: 0.5px solid rgba(0,0,0,0.07); box-shadow: var(--shadow); }
+  .section-card.accent-purple { border-left: 3px solid var(--p600); }
+  .section-card.accent-teal { border-left: 3px solid var(--t600); }
+  .section-card.accent-coral { border-left: 3px solid var(--c600); }
+  .section-header { display: flex; align-items: center; gap: 7px; margin-bottom: 14px; }
+  .section-emoji { font-size: 16px; }
+  .section-title { font-size: 12px; font-weight: 700; color: var(--g600); text-transform: uppercase; letter-spacing: 0.7px; }
+
+  /* ── Trait Bars ── */
+  .trait-item { margin-bottom: 14px; }
+  .trait-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .trait-dot { font-size: 11px; }
+  .trait-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--g900); }
+  .trait-score { font-size: 13px; font-weight: 700; }
+  .trait-bar-bg { height: 7px; background: var(--g100); border-radius: 4px; overflow: hidden; margin-bottom: 5px; }
+  .trait-bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+  .trait-note { font-size: 11px; color: var(--g600); line-height: 1.5; }
+
+  /* ── Chips ── */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 500; }
+  .chip-group-label { font-size: 11px; font-weight: 600; color: var(--g600); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; margin-top: 12px; display: block; }
+
+  /* ── Insights ── */
+  .insight-purple { background: var(--p50); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border-left: 4px solid var(--p600); }
+  .insight-teal { background: var(--t50); border-radius: var(--radius); padding: 16px; margin-bottom: 20px; border-left: 4px solid var(--t600); }
+  .insight-icon { font-size: 18px; display: block; margin-bottom: 4px; }
+  .insight-label-purple { font-size: 11px; font-weight: 700; color: var(--p600); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 6px; }
+  .insight-label-teal { font-size: 11px; font-weight: 700; color: var(--t600); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 6px; }
+  .insight-text { font-size: 14px; line-height: 1.6; }
+
+  /* ── Rel style ── */
+  .rel-divider { height: 0.5px; background: var(--g200); margin: 12px 0; }
+  .rel-text { font-size: 13px; color: var(--g600); line-height: 1.6; }
+
+  /* ── Action buttons ── */
+  .actions-title { font-size: 12px; font-weight: 700; color: var(--g600); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 12px; }
+  .actions-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+  .action-btn { border-radius: var(--radius); padding: 14px 10px; text-align: center; border: 0.5px solid rgba(0,0,0,0.07); cursor: pointer; background: none; transition: transform 0.1s, opacity 0.2s; }
+  .action-btn:hover { opacity: 0.85; }
+  .action-btn:active { transform: scale(0.96); }
+  .action-btn-emoji { font-size: 26px; display: block; margin-bottom: 6px; }
+  .action-btn-label { font-size: 13px; font-weight: 600; display: block; margin-bottom: 2px; }
+  .action-btn-sub { font-size: 11px; display: block; }
+
+  /* ── Settings ── */
+  .settings-wrap { max-width: 560px; margin: 0 auto; padding: 0 20px 60px; }
+  .settings-top { display: flex; align-items: center; justify-content: space-between; padding: 20px 0 32px; }
+  .settings-title { font-size: 17px; font-weight: 600; }
+  .settings-label { font-size: 11px; font-weight: 600; color: var(--g400); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; display: block; }
+  .key-masked { font-family: 'Courier New', monospace; font-size: 12px; color: var(--g800); margin-bottom: 8px; word-break: break-all; }
+  .key-badge { display: inline-block; background: var(--t50); color: var(--t600); border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 500; }
+  .danger-btn { width: 100%; padding: 13px; background: #FFF0F0; color: #CC0000; border: 0.5px solid #FFD0D0; border-radius: var(--radius); font-size: 14px; cursor: pointer; margin-top: 8px; transition: background 0.2s; }
+  .danger-btn:hover { background: #FFE0E0; }
+
+  /* ── Responsive ── */
+  @media (max-width: 480px) {
+    .hero-title { font-size: 30px; }
+    .report-hero { height: 240px; }
+    .actions-grid { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .action-btn { padding: 12px 6px; }
+    .action-btn-emoji { font-size: 22px; }
+    .action-btn-label { font-size: 12px; }
+  }
+
+  /* ── Print ── */
+  @media print {
+    .nav, .report-back-btn, .actions-title, .actions-grid, .btn-secondary { display: none !important; }
+    .page { display: block !important; }
+    #page-home, #page-welcome, #page-loading, #page-settings { display: none !important; }
+    body { background: white; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ WELCOME ══ -->
+<div class="page active" id="page-welcome">
+  <div class="container">
+    <div class="welcome-hero">
+      <span class="hero-emoji">✍️</span>
+      <h1 class="hero-title"><span>Grapho</span>Mind</h1>
+      <p class="hero-sub">Your handwriting reveals your soul</p>
+    </div>
+    <div class="feature-row">
+      <div class="feature-pill">🧠 Personality</div>
+      <div class="feature-pill">💡 Thinking style</div>
+      <div class="feature-pill">💼 Career fits</div>
+      <div class="feature-pill">❤️ Relationships</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Discover your personality through handwriting</div>
+      <div class="card-body">Upload any photo of handwriting — a letter, notes, a signature — and GraphoMind will reveal a detailed personality profile using advanced AI graphology.</div>
+      <button class="btn-primary" onclick="showPage('page-home')">Start analysing →</button>
+    </div>
+    <p class="foot-note">Powered by Claude AI · For entertainment purposes</p>
+  </div>
+</div>
+
+<!-- ══ HOME ══ -->
+<div class="page" id="page-home">
+  <nav class="nav">
+    <div class="nav-logo"><span>Grapho</span>Mind</div>
+    <button class="nav-btn" onclick="showPage('page-settings')" title="Settings">⚙️</button>
+  </nav>
+  <div class="container">
+    <div class="home-header">
+      <div>
+        <div class="home-logo"><span>Grapho</span>Mind</div>
+        <div class="home-tagline">Photograph any handwriting to begin</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <label class="name-label">👤 Whose handwriting is this? (optional)</label>
+      <input type="text" id="person-name" placeholder="Enter a name to personalise the report…" autocomplete="off">
+    </div>
+
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" id="file-input" accept="image/*" onchange="handleFile(this)">
+      <div class="upload-icon">📷</div>
+      <div class="upload-title">Click or drag a photo here</div>
+      <div class="upload-sub">JPG, PNG — any photo of handwritten text</div>
+    </div>
+
+    <div class="preview-wrap" id="preview-wrap" style="display:none">
+      <img id="preview-img" alt="Handwriting preview">
+      <button class="remove-btn" onclick="removeImage()">✕ Remove</button>
+      <div class="name-badge" id="name-badge" style="display:none"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="icon-btn" onclick="document.getElementById('file-input').click()">
+        <span class="icon-btn-emoji">🖼️</span>
+        <span class="icon-btn-label">Upload photo</span>
+      </button>
+      <button class="icon-btn" onclick="openCamera()">
+        <span class="icon-btn-emoji">📷</span>
+        <span class="icon-btn-label">Take photo</span>
+      </button>
+    </div>
+    <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="handleFile(this)" style="display:none">
+
+    <button class="analyse-btn" id="analyse-btn" onclick="runAnalysis()" style="display:none">
+      ✦  Analyse handwriting
+    </button>
+
+    <div class="tips-card">
+      <div class="tips-title">💡 Tips for best results</div>
+      <div class="tip-item">• Use natural light, avoid shadows</div>
+      <div class="tip-item">• Include at least 3–4 lines of writing</div>
+      <div class="tip-item">• Keep paper flat and straight</div>
+      <div class="tip-item">• Any language works</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOADING ══ -->
+<div class="page" id="page-loading">
+  <div class="load-wrap">
+    <div class="load-logo"><span>Grapho</span>Mind</div>
+    <div class="load-card">
+      <span class="load-emoji">🔍</span>
+      <div class="dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+      <div class="load-msg" id="load-msg">Reading pen strokes and letter forms…</div>
+      <div class="load-sub">Usually takes 10–20 seconds</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REPORT ══ -->
+<div class="page" id="page-report">
+  <div class="report-hero" id="report-hero">
+    <img class="report-hero-bg" id="report-hero-bg" alt="">
+    <div class="report-hero-overlay"></div>
+    <button class="report-back-btn" onclick="showPage('page-home')">← Back</button>
+    <div class="report-hero-content">
+      <div class="report-hero-name" id="report-hero-name">GraphoMind Report</div>
+      <div class="report-hero-archetype" id="report-hero-archetype"></div>
+      <span class="archetype-badge">✍ Handwriting Analysis</span>
+    </div>
+  </div>
+  <div class="report-body" id="report-body"></div>
+</div>
+
+<!-- ══ SETTINGS ══ -->
+<div class="page" id="page-settings">
+  <nav class="nav">
+    <button class="nav-btn" onclick="showPage('page-home')" style="font-size:14px;color:var(--p600);font-weight:500">← Back</button>
+    <span style="font-size:17px;font-weight:600">Settings</span>
+    <div style="width:60px"></div>
+  </nav>
+  <div class="settings-wrap">
+    <div class="card" style="margin-top:24px">
+      <div class="card-title" style="font-size:15px">About GraphoMind</div>
+      <div class="card-body" style="margin-bottom:0">Powered by Claude AI. Your handwriting image is sent securely to our server for analysis. No data is stored after analysis.</div>
+    </div>
+    <button class="danger-btn" onclick="showPage('page-welcome')">← Back to home</button>
+    <p class="foot-note" style="margin-top:32px">GraphoMind is for entertainment. Graphology is not a validated psychological science.</p>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────
+
+let currentImageB64 = '';
+let currentImageMime = '';
+let currentImageUri = '';
+let currentReport = null;
+
+// ── Page switching ──────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ── Welcome ─────────────────────────────────────────────────
+function toggleKeyVisibility() {
+  const inp = document.getElementById('api-key-input');
+  const btn = event.target;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? 'Show' : 'Hide';
+}
+
+function signOut() {
+  currentImageB64 = ''; currentReport = null;
+  showPage('page-welcome');
+}
+
+// ── Home ────────────────────────────────────────────────────
+function handleFile(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    currentImageB64 = dataUrl.split(',')[1];
+    currentImageMime = file.type || 'image/jpeg';
+    currentImageUri = dataUrl;
+    document.getElementById('preview-img').src = dataUrl;
+    document.getElementById('preview-wrap').style.display = 'block';
+    document.getElementById('upload-zone').style.display = 'none';
+    updateNameBadge();
+    document.getElementById('analyse-btn').style.display = 'block';
+    document.getElementById('analyse-btn').textContent = '✦  Analyse ' + (document.getElementById('person-name').value.trim() ? document.getElementById('person-name').value.trim() + "'s" : 'this') + ' handwriting';
+  };
+  reader.readAsDataURL(file);
+}
+
+function openCamera() {
+  document.getElementById('camera-input').value = '';
+  document.getElementById('camera-input').click();
+}
+
+function removeImage() {
+  currentImageB64 = ''; currentImageUri = '';
+  document.getElementById('preview-wrap').style.display = 'none';
+  document.getElementById('upload-zone').style.display = 'block';
+  document.getElementById('analyse-btn').style.display = 'none';
+  document.getElementById('file-input').value = '';
+  document.getElementById('camera-input').value = '';
+}
+
+function updateNameBadge() {
+  const name = document.getElementById('person-name').value.trim();
+  const badge = document.getElementById('name-badge');
+  if (name) { badge.textContent = '👤 ' + name; badge.style.display = 'block'; }
+  else badge.style.display = 'none';
+}
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('person-name').addEventListener('input', () => {
+    updateNameBadge();
+    if (currentImageB64) {
+      const name = document.getElementById('person-name').value.trim();
+      document.getElementById('analyse-btn').textContent = '✦  Analyse ' + (name ? name + "'s" : 'this') + ' handwriting';
+    }
+  });
+  const zone = document.getElementById('upload-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const dt = new DataTransfer(); dt.items.add(file);
+      const inp = document.getElementById('file-input'); inp.files = dt.files;
+      handleFile(inp);
+    }
+  });
+});
+
+// ── API ─────────────────────────────────────────────────────
+function buildPrompt(name) {
+  const who = name ? `The handwriting belongs to ${name}. Address them by name in the summary, fun_fact and advice fields.` : '';
+  return `You are GraphoMind, a world-class expert graphologist with 20+ years experience. ${who} Analyse the handwriting image in rich detail — examine letter size, slant, pressure, spacing, loops, baseline, and pen lifts. Return ONLY a raw JSON object, no markdown, no backticks, first character must be {. Use this exact structure:
+{"archetype":"The [vivid 2-3 word archetype]","summary":"4 sentence rich personality overview","energy_score":72,"creativity_score":68,"social_score":55,"traits":{"personality":[{"name":"Confidence","score":70,"note":"specific observation"},{"name":"Creativity","score":65,"note":"specific observation"},{"name":"Empathy","score":80,"note":"specific observation"},{"name":"Ambition","score":75,"note":"specific observation"},{"name":"Introversion","score":45,"note":"specific observation"}],"thinking":[{"name":"Analytical","score":60,"note":"specific observation"},{"name":"Intuitive","score":78,"note":"specific observation"},{"name":"Detail Focus","score":55,"note":"specific observation"},{"name":"Big Picture","score":82,"note":"specific observation"}],"social":[{"name":"Openness","score":70,"note":"specific observation"},{"name":"Trustworthiness","score":85,"note":"specific observation"},{"name":"Expressiveness","score":60,"note":"specific observation"}]},"handwriting_markers":["feature 1","feature 2","feature 3","feature 4"],"strengths":["s1","s2","s3","s4"],"growth_areas":["g1","g2"],"career_hints":["c1","c2","c3"],"relationship_style":"2-3 sentences","fun_fact":"quirky insight","advice":"warm encouraging sentence"}`;
+}
+
+const LOAD_MSGS = [
+  'Reading pen strokes and letter forms…',
+  'Analysing slant and baseline rhythm…',
+  'Examining loop depth and spacing…',
+  'Cross-referencing personality markers…',
+  'Composing your character report…',
+];
+
+async function runAnalysis() {
+  if (!currentImageB64) return;
+  const name = document.getElementById('person-name').value.trim();
+  showPage('page-loading');
+  let mi = 0;
+  const t = setInterval(() => { mi = (mi+1) % LOAD_MSGS.length; document.getElementById('load-msg').textContent = LOAD_MSGS[mi]; }, 2200);
+  try {
+    const res = await fetch('/api/analyse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image: currentImageB64,
+        mimeType: currentImageMime,
+        name: name,
+      }),
+    });
+    clearInterval(t);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || `Error ${res.status}`);
+    const report = data.report;
+    currentReport = report;
+    renderReport(report, name);
+  } catch(e) {
+    clearInterval(t);
+    showPage('page-home');
+    alert('Analysis failed: ' + e.message);
+  }
+}
+
+// ── Report Rendering ─────────────────────────────────────────
+function barColor(s) { return s>=75?'#1D9E75':s>=50?'#534AB7':s>=30?'#BA7517':'#D85A30'; }
+function dotEmoji(s) { return s>=75?'🟢':s>=50?'🔵':s>=30?'🟡':'🔴'; }
+
+function traitHTML(t) {
+  const c = barColor(t.score);
+  return `<div class="trait-item">
+    <div class="trait-header">
+      <span class="trait-dot">${dotEmoji(t.score)}</span>
+      <span class="trait-name">${t.name}</span>
+      <span class="trait-score" style="color:${c}">${t.score}</span>
+    </div>
+    <div class="trait-bar-bg"><div class="trait-bar-fill" style="width:${t.score}%;background:${c}"></div></div>
+    ${t.note ? `<div class="trait-note">${t.note}</div>` : ''}
+  </div>`;
+}
+
+function chipsHTML(arr, bg, color) {
+  return arr.map(a => `<span class="chip" style="background:${bg};color:${color}">${a}</span>`).join('');
+}
+
+function renderReport(r, name) {
+  document.getElementById('report-hero-bg').src = currentImageUri;
+  document.getElementById('report-hero-name').textContent = name ? `${name}'s Report` : 'GraphoMind Report';
+  document.getElementById('report-hero-archetype').textContent = r.archetype;
+
+  const body = document.getElementById('report-body');
+  body.innerHTML = `
+    <div class="summary-card"><p class="summary-text">${r.summary}</p></div>
+
+    <div class="meters-row">
+      <div class="meter-card">
+        <div class="meter-top"><span class="meter-emoji">⚡</span><span class="meter-val" style="color:#534AB7">${r.energy_score}</span></div>
+        <div class="meter-bar-bg"><div class="meter-bar-fill" style="width:${r.energy_score}%;background:#534AB7"></div></div>
+        <div class="meter-label">Energy</div>
+      </div>
+      <div class="meter-card">
+        <div class="meter-top"><span class="meter-emoji">🎨</span><span class="meter-val" style="color:#0F6E56">${r.creativity_score}</span></div>
+        <div class="meter-bar-bg"><div class="meter-bar-fill" style="width:${r.creativity_score}%;background:#0F6E56"></div></div>
+        <div class="meter-label">Creativity</div>
+      </div>
+      <div class="meter-card">
+        <div class="meter-top"><span class="meter-emoji">👥</span><span class="meter-val" style="color:#993C1D">${r.social_score}</span></div>
+        <div class="meter-bar-bg"><div class="meter-bar-fill" style="width:${r.social_score}%;background:#993C1D"></div></div>
+        <div class="meter-label">Sociability</div>
+      </div>
+    </div>
+
+    <div class="section-card accent-purple">
+      <div class="section-header"><span class="section-emoji">🧠</span><span class="section-title">Personality traits</span></div>
+      ${r.traits.personality.map(traitHTML).join('')}
+    </div>
+
+    <div class="section-card accent-teal">
+      <div class="section-header"><span class="section-emoji">💡</span><span class="section-title">Thinking style</span></div>
+      ${r.traits.thinking.map(traitHTML).join('')}
+    </div>
+
+    <div class="section-card accent-coral">
+      <div class="section-header"><span class="section-emoji">❤️</span><span class="section-title">Social & relational</span></div>
+      ${r.traits.social.map(traitHTML).join('')}
+      <div class="rel-divider"></div>
+      <div class="rel-text">${r.relationship_style}</div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-header"><span class="section-emoji">✍️</span><span class="section-title">What the pen reveals</span></div>
+      <div class="chip-row">${chipsHTML(r.handwriting_markers,'#EEEDFE','#3C3489')}</div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-header"><span class="section-emoji">⭐</span><span class="section-title">Strengths & growth</span></div>
+      <span class="chip-group-label">Strengths</span>
+      <div class="chip-row">${chipsHTML(r.strengths,'#E1F5EE','#085041')}</div>
+      <span class="chip-group-label">Areas to grow</span>
+      <div class="chip-row">${chipsHTML(r.growth_areas,'#FAEEDA','#854F0B')}</div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-header"><span class="section-emoji">💼</span><span class="section-title">Career affinities</span></div>
+      <div class="chip-row">${chipsHTML(r.career_hints,'#FAECE7','#993C1D')}</div>
+    </div>
+
+    <div class="insight-purple">
+      <span class="insight-icon">✦</span>
+      <div class="insight-label-purple">Fun insight</div>
+      <div class="insight-text" style="color:#26215C">${r.fun_fact}</div>
+    </div>
+
+    <div class="insight-teal">
+      <span class="insight-icon">♡</span>
+      <div class="insight-label-teal">A word for ${name || 'you'}</div>
+      <div class="insight-text" style="color:#085041">${r.advice}</div>
+    </div>
+
+    <div class="actions-title">Share this report</div>
+    <div class="actions-grid">
+      <button class="action-btn" style="background:#EEEDFE" onclick="shareReport()">
+        <span class="action-btn-emoji">📤</span>
+        <span class="action-btn-label" style="color:#3C3489">Share</span>
+        <span class="action-btn-sub" style="color:#534AB7">Full report</span>
+      </button>
+      <button class="action-btn" style="background:#E1F5EE" onclick="printReport()">
+        <span class="action-btn-emoji">🖨️</span>
+        <span class="action-btn-label" style="color:#085041">Print</span>
+        <span class="action-btn-sub" style="color:#0F6E56">Send to printer</span>
+      </button>
+      <button class="action-btn" style="background:#FAECE7" onclick="savePDF()">
+        <span class="action-btn-emoji">📄</span>
+        <span class="action-btn-label" style="color:#993C1D">PDF</span>
+        <span class="action-btn-sub" style="color:#993C1D">Save & share</span>
+      </button>
+    </div>
+
+    <button class="btn-secondary" onclick="newAnalysis()">✦  Analyse another handwriting</button>
+  `;
+  showPage('page-report');
+}
+
+// ── Actions ──────────────────────────────────────────────────
+function newAnalysis() {
+  removeImage();
+  document.getElementById('person-name').value = '';
+  showPage('page-home');
+}
+
+function shareReport() {
+  const r = currentReport; if (!r) return;
+  const name = document.getElementById('person-name').value.trim();
+  const traits = [...r.traits.personality,...r.traits.thinking,...r.traits.social]
+    .map(t=>`  • ${t.name}: ${t.score}/100 — ${t.note}`).join('\n');
+  const text = [
+    '✍️ GRAPHOMIND PERSONALITY REPORT',
+    name ? `For: ${name}` : '',
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+    `Archetype: ${r.archetype}`,``,r.summary,``,
+    `⚡ Energy: ${r.energy_score}  🎨 Creativity: ${r.creativity_score}  👥 Sociability: ${r.social_score}`,``,
+    '── TRAITS ──', traits, ``,
+    '── WHAT THE PEN REVEALS ──', r.handwriting_markers.map(m=>`  • ${m}`).join('\n'),``,
+    '── STRENGTHS ──', r.strengths.map(s=>`  ✓ ${s}`).join('\n'),``,
+    '── AREAS TO GROW ──', r.growth_areas.map(g=>`  → ${g}`).join('\n'),``,
+    '── CAREER AFFINITIES ──', r.career_hints.map(c=>`  ★ ${c}`).join('\n'),``,
+    '── RELATIONSHIP STYLE ──', r.relationship_style,``,
+    `✦ Fun insight: ${r.fun_fact}`,``,`♡ ${r.advice}`,``,
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+    'Analysed by GraphoMind',
+  ].filter(Boolean).join('\n');
+  if (navigator.share) {
+    navigator.share({ title: 'GraphoMind Report', text }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(text).then(() => alert('Report copied to clipboard!')).catch(()=>{
+      prompt('Copy your report:', text);
+    });
+  }
+}
+
+function printReport() { window.print(); }
+
+function savePDF() {
+  const r = currentReport; if (!r) return;
+  const name = document.getElementById('person-name').value.trim();
+  const bc = s => s>=75?'#1D9E75':s>=50?'#534AB7':s>=30?'#BA7517':'#D85A30';
+  const traitRows = arr => arr.map(t=>`
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:500;margin-bottom:4px"><span>${t.name}</span><span style="color:${bc(t.score)}">${t.score}</span></div>
+      <div style="height:7px;background:#F1EFE8;border-radius:4px;overflow:hidden;margin-bottom:3px"><div style="width:${t.score}%;height:100%;background:${bc(t.score)};border-radius:4px"></div></div>
+      <div style="font-size:11px;color:#666">${t.note}</div>
+    </div>`).join('');
+  const tags = (arr,bg,color) => arr.map(a=>`<span style="background:${bg};color:${color};padding:4px 11px;border-radius:999px;font-size:12px;font-weight:500;display:inline-block;margin:3px">${a}</span>`).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>GraphoMind Report${name?' — '+name:''}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;background:#F8F7FF;padding:0}
+  .hero{background:linear-gradient(135deg,#534AB7,#3C3489);padding:32px 24px;color:white;text-align:center}
+  .hero h2{font-size:13px;opacity:.8;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .hero h1{font-size:26px;font-weight:700;margin-bottom:12px}
+  .hero p{font-size:14px;line-height:1.6;opacity:.9}
+  .body{padding:20px;max-width:700px;margin:0 auto}
+  .scores{display:flex;gap:10px;margin-bottom:20px}
+  .sc{flex:1;background:white;border-radius:12px;padding:14px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+  .sc-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#666;margin-bottom:4px}
+  .sc-val{font-size:28px;font-weight:700}
+  .sec{background:white;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#534AB7;margin-bottom:14px}
+  .insight{border-radius:12px;padding:14px;margin-bottom:12px}
+  .ins-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+  .footer{text-align:center;font-size:11px;color:#999;margin-top:24px;padding:16px}
+  </style></head><body>
+  <div class="hero">
+    <h2>${name ? name+"'s Report" : 'GraphoMind Report'}</h2>
+    <h1>${r.archetype}</h1>
+    <p>${r.summary}</p>
+  </div>
+  <div class="body">
+    <div class="scores">
+      <div class="sc"><div class="sc-label">Energy</div><div class="sc-val" style="color:#534AB7">${r.energy_score}</div></div>
+      <div class="sc"><div class="sc-label">Creativity</div><div class="sc-val" style="color:#0F6E56">${r.creativity_score}</div></div>
+      <div class="sc"><div class="sc-label">Sociability</div><div class="sc-val" style="color:#993C1D">${r.social_score}</div></div>
+    </div>
+    <div class="sec"><div class="sec-title">🧠 Personality traits</div>${traitRows(r.traits.personality)}</div>
+    <div class="sec"><div class="sec-title">💡 Thinking style</div>${traitRows(r.traits.thinking)}</div>
+    <div class="sec"><div class="sec-title">❤️ Social & relational</div>${traitRows(r.traits.social)}<p style="font-size:13px;color:#666;line-height:1.6;margin-top:12px">${r.relationship_style}</p></div>
+    <div class="sec"><div class="sec-title">✍️ What the pen reveals</div>${tags(r.handwriting_markers,'#EEEDFE','#3C3489')}</div>
+    <div class="sec"><div class="sec-title">⭐ Strengths</div>${tags(r.strengths,'#E1F5EE','#085041')}<br><br><div class="sec-title" style="margin-top:10px">🌱 Areas to grow</div>${tags(r.growth_areas,'#FAEEDA','#854F0B')}</div>
+    <div class="sec"><div class="sec-title">💼 Career affinities</div>${tags(r.career_hints,'#FAECE7','#993C1D')}</div>
+    <div class="insight" style="background:#EEEDFE"><div class="ins-label" style="color:#534AB7">✦ Fun insight</div><p style="font-size:13px;color:#26215C;line-height:1.6">${r.fun_fact}</p></div>
+    <div class="insight" style="background:#E1F5EE"><div class="ins-label" style="color:#0F6E56">♡ A word for ${name||'you'}</div><p style="font-size:13px;color:#085041;line-height:1.6">${r.advice}</p></div>
+    <div class="footer">GraphoMind · ${new Date().toLocaleDateString()}</div>
+  </div></body></html>`;
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url,'_blank');
+  if (win) { setTimeout(() => { win.print(); }, 800); }
+  else { const a = document.createElement('a'); a.href=url; a.download=`GraphoMind${name?'-'+name:''}-Report.html`; a.click(); }
+}
+</script>
+</body>
+</html>
